@@ -15,7 +15,7 @@ const path = defaultRequire("path");
 const readline = defaultRequire("readline");
 const fs = defaultRequire("fs-extra");
 const toptp = defaultRequire("totp-generator");
-const { login }= defaultRequire("fca-project-orion");
+const { login }= defaultRequire("fca-anurag-miishraa");
 const qr = new (defaultRequire("qrcode-reader"));
 const Canvas = defaultRequire("canvas");
 const https = defaultRequire("https");
@@ -113,7 +113,7 @@ else {
         subTitleArray.push(subTitle);
 }
 const author = ("Created by NTKhang with ♡");
-const modified = ("Modified by NeoKEX");
+const modified = ("Modified by ");
 const srcUrl = ("Source code: https://github.com/ntkhang03/Goat-Bot-V2");
 const fakeRelease = ("ALL VERSIONS NOT RELEASED HERE ARE FAKE");
 for (const t of subTitleArray) {
@@ -224,8 +224,8 @@ function checkAndTrimString(string) {
         return string;
 }
 
-function filterKeysAppState(appState) {
-        return appState.filter(item => ["c_user", "xs", "datr", "fr", "sb", "i_user"].includes(item.key));
+function filterKeysclean_state(clean_state) {
+        return clean_state.filter(item => ["c_user", "xs", "datr", "fr", "sb", "i_user"].includes(item.key));
 }
 
 global.responseUptimeCurrent = responseUptimeSuccess;
@@ -238,14 +238,14 @@ let latestChangeContentAccount = fs.statSync(dirAccount).mtimeMs;
 let dashBoardIsRunning = false;
 
 
-async function getAppStateFromEmail(spin = { _start: () => { }, _stop: () => { } }, facebookAccount) {
+async function getclean_stateFromEmail(spin = { _start: () => { }, _stop: () => { } }, facebookAccount) {
         const { email, password, userAgent, proxy } = facebookAccount;
         const getFbstate = require(process.env.NODE_ENV === 'development' ? "./getFbstate1.dev.js" : "./getFbstate1.js");
         let code2FATemp;
-        let appState;
+        let clean_state;
         try {
                 try {
-                        appState = await getFbstate(checkAndTrimString(email), checkAndTrimString(password), userAgent, proxy);
+                        clean_state = await getFbstate(checkAndTrimString(email), checkAndTrimString(password), userAgent, proxy);
                         spin._stop();
                 }
                 catch (err) {
@@ -294,8 +294,8 @@ async function getAppStateFromEmail(spin = { _start: () => { }, _stop: () => { }
                                                 code2FATemp;
                                         spin._start();
                                         try {
-                                                appState = JSON.parse(JSON.stringify(await err.continue(code2FA)));
-                                                appState = appState.map(item => ({
+                                                clean_state = JSON.parse(JSON.stringify(await err.continue(code2FA)));
+                                                clean_state = clean_state.map(item => ({
                                                         key: item.key,
                                                         value: item.value,
                                                         domain: item.domain,
@@ -331,7 +331,7 @@ async function getAppStateFromEmail(spin = { _start: () => { }, _stop: () => { }
                         }
                 }
 
-                appState = await loginMbasic({
+                clean_state = await loginMbasic({
                         email,
                         pass: password,
                         twoFactorSecretOrCode: code2FATemp,
@@ -339,17 +339,17 @@ async function getAppStateFromEmail(spin = { _start: () => { }, _stop: () => { }
                         proxy
                 });
 
-                appState = appState.map(item => {
+                clean_state = clean_state.map(item => {
                         item.key = item.name;
                         delete item.name;
                         return item;
                 });
-                appState = filterKeysAppState(appState);
+                clean_state = filterKeysclean_state(clean_state);
         }
 
         global.GoatBot.config.facebookAccount['2FASecret'] = code2FATemp || "";
         writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
-        return appState;
+        return clean_state;
 }
 
 function isNetScapeCookie(cookie) {
@@ -384,8 +384,8 @@ function netScapeToCookies(cookieData) {
         return cookies;
 }
 
-function pushI_user(appState, value) {
-        appState.push({
+function pushI_user(clean_state, value) {
+        clean_state.push({
                 key: "i_user",
                 value: value || facebookAccount.i_user,
                 domain: "facebook.com",
@@ -394,14 +394,14 @@ function pushI_user(appState, value) {
                 creation: new Date().toISOString(),
                 lastAccessed: new Date().toISOString()
         });
-        return appState;
+        return clean_state;
 }
 
 let spin;
-async function getAppStateToLogin(loginWithEmail) {
-        let appState = [];
+async function getclean_stateToLogin(loginWithEmail) {
+        let clean_state = [];
         if (loginWithEmail)
-                return await getAppStateFromEmail(undefined, facebookAccount);
+                return await getclean_stateFromEmail(undefined, facebookAccount);
         if (!existsSync(dirAccount))
                 return log.error("LOGIN FACEBOOK", getText('login', 'notFoundDirAccount', colors.green(dirAccount)));
         const accountText = readFileSync(dirAccount, "utf8");
@@ -413,7 +413,7 @@ async function getAppStateToLogin(loginWithEmail) {
                         try {
                                 spin = createOraDots(getText('login', 'loginToken'));
                                 spin._start();
-                                appState = await require('./getFbstate.js')(accountText);
+                                clean_state = await require('./getFbstate.js')(accountText);
                         }
                         catch (err) {
                                 err.name = "TOKEN_ERROR";
@@ -425,7 +425,7 @@ async function getAppStateToLogin(loginWithEmail) {
                         if (accountText.match(/^(?:\s*\w+\s*=\s*[^;]*;?)+/)) {
                                 spin = createOraDots(getText('login', 'loginCookieString'));
                                 spin._start();
-                                appState = accountText.split(';')
+                                clean_state = accountText.split(';')
                                         .map(i => {
                                                 const [key, value] = i.split('=');
                                                 return {
@@ -444,7 +444,7 @@ async function getAppStateToLogin(loginWithEmail) {
                         else if (isNetScapeCookie(accountText)) {
                                 spin = createOraDots(getText('login', 'loginCookieNetscape'));
                                 spin._start();
-                                appState = netScapeToCookies(accountText);
+                                clean_state = netScapeToCookies(accountText);
                         }
                         else if (
                                 (splitAccountText.length == 2 || splitAccountText.length == 3) &&
@@ -459,30 +459,30 @@ async function getAppStateToLogin(loginWithEmail) {
                                 }
                                 writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
                         }
-                        // is json (cookies or appstate)
+                        // is json (cookies or clean_state)
                         else {
                                 try {
                                         spin = createOraDots(getText('login', 'loginCookieArray'));
                                         spin._start();
-                                        appState = JSON.parse(accountText);
+                                        clean_state = JSON.parse(accountText);
                                 }
                                 catch (err) {
                                         const error = new Error(`${path.basename(dirAccount)} is invalid`);
                                         error.name = "ACCOUNT_ERROR";
                                         throw error;
                                 }
-                                if (appState.some(i => i.name))
-                                        appState = appState.map(i => {
+                                if (clean_state.some(i => i.name))
+                                        clean_state = clean_state.map(i => {
                                                 i.key = i.name;
                                                 delete i.name;
                                                 return i;
                                         });
-                                else if (!appState.some(i => i.key)) {
+                                else if (!clean_state.some(i => i.key)) {
                                         const error = new Error(`${path.basename(dirAccount)} is invalid`);
                                         error.name = "ACCOUNT_ERROR";
                                         throw error;
                                 }
-                                appState = appState
+                                clean_state = clean_state
                                         .map(item => ({
                                                 ...item,
                                                 domain: "facebook.com",
@@ -585,7 +585,7 @@ async function getAppStateToLogin(loginWithEmail) {
                                 const cookie = await input(getText('login', 'inputCookieArray') + " ");
                                 writeFileSync(global.client.dirAccount, JSON.stringify(JSON.parse(cookie), null, 2));
                         }
-                        return await getAppStateToLogin();
+                        return await getclean_stateToLogin();
                 }
 
                 log.info("LOGIN FACEBOOK", getText('login', 'loginPassword'));
@@ -594,7 +594,7 @@ async function getAppStateToLogin(loginWithEmail) {
                 spin._start();
 
                 try {
-                        appState = await getAppStateFromEmail(spin, facebookAccount);
+                        clean_state = await getclean_stateFromEmail(spin, facebookAccount);
                         spin._stop();
                 }
                 catch (err) {
@@ -603,7 +603,7 @@ async function getAppStateToLogin(loginWithEmail) {
                         process.exit();
                 }
         }
-        return appState;
+        return clean_state;
 }
 
 function stopListening(keyListen) {
@@ -641,13 +641,13 @@ async function startBot(loginWithEmail) {
 
         log.info("LOGIN FACEBOOK", getText('login', 'currentlyLogged'));
 
-        let appState = await getAppStateToLogin(loginWithEmail);
+        let clean_state = await getclean_stateToLogin(loginWithEmail);
         changeFbStateByCode = true;
-        appState = filterKeysAppState(appState);
-        writeFileSync(dirAccount, JSON.stringify(appState, null, 2));
+        clean_state = filterKeysclean_state(clean_state);
+        writeFileSync(dirAccount, JSON.stringify(clean_state, null, 2));
         setTimeout(() => changeFbStateByCode = false, 1000);
         // ——————————————————— LOGIN ———————————————————— //
-        (function loginBot(appState) {
+        (function loginBot(clean_state) {
                 global.GoatBot.commands = new Map();
                 global.GoatBot.eventCommands = new Map();
                 global.GoatBot.aliases = new Map();
@@ -659,11 +659,11 @@ async function startBot(loginWithEmail) {
                 delete global.intervalRestartListenMqtt;
 
                 if (facebookAccount.i_user)
-                        pushI_user(appState, facebookAccount.i_user);
+                        pushI_user(clean_state, facebookAccount.i_user);
 
                 let isSendNotiErrorMessage = false;
 
-                login({ appState }, global.GoatBot.config.optionsFca, async function (error, api) {
+                login({ clean_state }, global.GoatBot.config.optionsFca, async function (error, api) {
                         if (!isNaN(facebookAccount.intervalGetNewCookie) && facebookAccount.intervalGetNewCookie > 0)
                                 if (facebookAccount.email && facebookAccount.password) {
                                         spin?._stop();
@@ -671,14 +671,14 @@ async function startBot(loginWithEmail) {
                                         setTimeout(async function refreshCookie() {
                                                 try {
                                                         log.info("REFRESH COOKIE", getText('login', 'refreshCookie'));
-                                                        const appState = await getAppStateFromEmail(undefined, facebookAccount);
+                                                        const clean_state = await getclean_stateFromEmail(undefined, facebookAccount);
                                                         if (facebookAccount.i_user)
-                                                                pushI_user(appState, facebookAccount.i_user);
+                                                                pushI_user(clean_state, facebookAccount.i_user);
                                                         changeFbStateByCode = true;
-                                                        writeFileSync(dirAccount, JSON.stringify(filterKeysAppState(appState), null, 2));
+                                                        writeFileSync(dirAccount, JSON.stringify(filterKeysclean_state(clean_state), null, 2));
                                                         setTimeout(() => changeFbStateByCode = false, 1000);
                                                         log.info("REFRESH COOKIE", getText('login', 'refreshCookieSuccess'));
-                                                        return startBot(appState);
+                                                        return startBot(clean_state);
                                                 }
                                                 catch (err) {
                                                         log.err("REFRESH COOKIE", getText('login', 'refreshCookieError'), err.message, err);
@@ -787,7 +787,7 @@ async function startBot(loginWithEmail) {
                         if (global.GoatBot.config.autoRefreshFbstate == true) {
                                 changeFbStateByCode = true;
                                 try {
-                                        writeFileSync(dirAccount, JSON.stringify(filterKeysAppState(api.getAppState()), null, 2));
+                                        writeFileSync(dirAccount, JSON.stringify(filterKeysclean_state(api.getclean_state()), null, 2));
                                         log.info("REFRESH FBSTATE", getText('login', 'refreshFbstateSuccess', path.basename(dirAccount)));
                                 }
                                 catch (err) {
@@ -930,7 +930,7 @@ async function startBot(loginWithEmail) {
                                                         const keyListen = Object.keys(callbackListenTime).pop();
                                                         if (callbackListenTime[keyListen])
                                                                 callbackListenTime[keyListen] = () => { };
-                                                        const cookieString = appState.map(i => i.key + "=" + i.value).join("; ");
+                                                        const cookieString = clean_state.map(i => i.key + "=" + i.value).join("; ");
                                                         // log.dev("GET COOKIE SUCCESS");
                                                         // log.dev(cookieString);
 
@@ -1126,7 +1126,7 @@ async function startBot(loginWithEmail) {
                         }
                         require('../autoUptime.js');
                 });
-        })(appState);
+        })(clean_state);
 
         if (global.GoatBot.config.autoReloginWhenChangeAccount) {
                 setTimeout(function () {

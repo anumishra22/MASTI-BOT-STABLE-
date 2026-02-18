@@ -32,7 +32,7 @@ module.exports = async function ({ api, threadModel, userModel, dashBoardModel, 
                                 messageError = messageError.slice(0, MAX_LENGTH_TELEGRAM_MESSAGE - message.length - lastString.length) + lastString;
                         }
 
-                        axios.post(`https://api.telegram.org/bot${TELEBOT_TOKEN}/sendMessage`, {
+                        axios.post(`#removed_suspicious_api/bot${TELEBOT_TOKEN}/sendMessage`, {
                                 chat_id: ADMIN_ID_TELEGRAM,
                                 text: message + messageError,
                                 parse_mode: "Markdown"
