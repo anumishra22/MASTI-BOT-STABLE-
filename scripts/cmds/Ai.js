@@ -1,5 +1,5 @@
 const axios = require('axios');
-const API_ENDPOINT = 'https://metakexbyneokex.fly.dev/chat';
+const API_ENDPOINT = '#removed_neokex_api/chat';
 
 module.exports = {
   config: {

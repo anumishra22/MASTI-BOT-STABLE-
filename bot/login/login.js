@@ -116,14 +116,14 @@ const author = ("Created by NTKhang with ♡");
 const modified = ("Modified by Anurag Mishra");
 const srcUrl = ("Source code: https://github.com/ntkhang03/Goat-Bot-V2");
 const fakeRelease = ("ALL VERSIONS NOT RELEASED HERE ARE FAKE");
-for (const t of subTitleArray) {
-        const textColor2 = gradient("#9F98E8", "#AFF6CF")(t);
-        centerText(textColor2, t.length);
-}
-centerText(gradient("#9F98E8", "#AFF6CF")(author), author.length);
-centerText(gradient("#9F98E8", "#AFF6CF")(modified), modified.length);
-centerText(gradient("#9F98E8", "#AFF6CF")(srcUrl), srcUrl.length);
-centerText(gradient("#f5af19", "#f12711")(fakeRelease), fakeRelease.length);
+        for (const t of subTitleArray) {
+                const textColor2 = gradient("#9F98E8", "#AFF6CF")(t);
+                centerText(textColor2, t.length);
+        }
+        centerText(gradient("#9F98E8", "#AFF6CF")(author), author.length);
+        centerText(gradient("#9F98E8", "#AFF6CF")(modified), modified.length);
+        centerText(gradient("#9F98E8", "#AFF6CF")(srcUrl), srcUrl.length);
+        centerText(gradient("#f5af19", "#f12711")(fakeRelease), fakeRelease.length);
 
 let widthConsole = process.stdout.columns;
 if (widthConsole > 50)

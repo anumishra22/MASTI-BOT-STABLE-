@@ -5,7 +5,7 @@ const stream = require('stream');
 const { promisify } = require('util');
 
 const pipeline = promisify(stream.pipeline);
-const API_ENDPOINT = "https://metakexbyneokex.fly.dev/animate";
+const API_ENDPOINT = "#removed_neokex_api/animate";
 const CACHE_DIR = path.join(__dirname, 'cache');
 
 module.exports = {

@@ -18,7 +18,7 @@ module.exports = {
     name: "uptime",
     aliases: ["runtime", "status", "upt", "up"],
     version: "1.3", 
-    author: "NeoKEX",
+    author: "Anurag Mishra",
     countDown: 5,
     role: 0,
     longDescription: "Shows the bot's uptime and hosting environment details.",

@@ -33,3 +33,7 @@ args = "npm start"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[ports]]
+localPort = 3001
+externalPort = 80

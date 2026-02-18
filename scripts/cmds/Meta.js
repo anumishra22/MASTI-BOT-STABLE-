@@ -3,7 +3,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const { createCanvas, loadImage } = require('canvas');
 
-const API_ENDPOINT = "https://metakexbyneokex.fly.dev/images/generate";
+const API_ENDPOINT = "#removed_neokex_api/images/generate";
 
 async function downloadImage(url, tempDir, filename) {
     const tempFilePath = path.join(tempDir, filename);

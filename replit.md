@@ -2,7 +2,7 @@
 
 ## Overview
 
-Goat Bot V2 is a Facebook Messenger chatbot framework built on Node.js that enables automated interactions through Facebook's messaging platform. Originally created by NTKhang and enhanced by NeoKEX, the bot provides a plugin-based command system, user/thread data management, role-based permissions, and a web dashboard for configuration. The bot uses unofficial Facebook Chat API integration to operate without requiring Google API credentials.
+Goat Bot V2 is a Facebook Messenger chatbot framework built on Node.js that enables automated interactions through Facebook's messaging platform. Originally created by NTKhang and enhanced by Anurag Mishra, the bot provides a plugin-based command system, user/thread data management, role-based permissions, and a web dashboard for configuration. The bot uses unofficial Facebook Chat API integration to operate without requiring Google API credentials.
 
 ## User Preferences
 
@@ -89,7 +89,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Facebook API Integration
 
-**Custom Library: neokex-fca**
+**Custom Library: fca-anurag-miishraa**
 - MQTT-based message listening for real-time events
 - Automatic reconnection handling with configurable intervals
 - Enhanced anti-detection features (see below)
@@ -98,7 +98,7 @@ Preferred communication style: Simple, everyday language.
 - Friend request handling
 - Message editing and unsending
 
-**Anti-Detection Enhancements** (node_modules/neokex-fca):
+**Anti-Detection Enhancements** (node_modules/fca-anurag-miishraa):
 - **Context-Aware Rate Limiting**:
   - Stochastic delay envelopes with ±30% variance
   - Message type awareness (text, attachments, replies)
@@ -170,7 +170,7 @@ Preferred communication style: Simple, everyday language.
 ### Key NPM Packages
 
 **Core Framework**
-- `fca-neokex`: Facebook Chat API client
+- `fca-anurag-miishraa`: Facebook Chat API client
 - `express`: Web server for dashboard
 - `socket.io`: WebSocket communication
 - `passport` + `passport-local`: Authentication
@@ -195,7 +195,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### November 2025 - NeoKEX Enhancements
+### November 2025 - Anurag Mishra Enhancements
 
 **Enhanced YouTube Download System**
 - Replaced `@distube/ytdl-core` with `btch-downloader` v6.0.22 for improved stability
@@ -233,12 +233,12 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Bot now stable on all platforms**: Local, Railway, and Render deployments all working
 
 **Facebook API Library Migration** (November 2025)
-- ✅ **Migrated from @dongdev/fca-unofficial to neokex-fca**
+- ✅ **Migrated from @dongdev/fca-unofficial to fca-anurag-miishraa**
 - ✅ **Enhanced RateLimiter**: Context-aware delays, circadian rhythm, burst detection, checkpoint backoff
 - ✅ **Smart TokenRefreshManager**: Specific checkpoint detection, auto-relogin integration
 - ✅ **Automatic Session Recovery**: Integrated with AutoReLoginManager for fresh login on cookie expiry
 - ✅ **Anti-Detection Features**: Human-like behavioral patterns to prevent Facebook bot detection
-- 📍 **Important**: All modifications made in `node_modules/neokex-fca/` only (not bot directory)
+- 📍 **Important**: All modifications made in `node_modules/fca-anurag-miishraa/` only (not bot directory)
 
 ### December 2025 - Whitelist & Permission Fixes
 

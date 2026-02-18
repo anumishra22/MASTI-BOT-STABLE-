@@ -283,4 +283,4 @@ requiredMoney: 5000   // AND have $5000
 
 ---
 
-**Created by NTKhang | Enhanced by NeoKEX**
+**Created by NTKhang | Enhanced by Anurag Mishra**
