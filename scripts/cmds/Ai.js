@@ -1,5 +1,5 @@
 const axios = require('axios');
-const API_ENDPOINT = '#removed_neokex_api/chat';
+const API_ENDPOINT = '#removed_anurag_api/chat';
 
 module.exports = {
   config: {
