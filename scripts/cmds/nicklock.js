@@ -1,51 +1,49 @@
 module.exports = {
 	config: {
 		name: "nicklock",
-		version: "2.0",
+		version: "3.0",
 		author: "Anurag",
 		countDown: 5,
 		role: 1,
 		description: {
-			vi: "Khóa nickname của thành viên, khi ai đó đổi sẽ tự động khôi phục",
-			en: "Lock a user's nickname, auto revert when someone changes it"
+			vi: "Khóa nickname tất cả thành viên trong nhóm",
+			en: "Lock all members' nickname in the group"
 		},
 		category: "box chat",
 		guide: {
-			vi: "   {pn} @tag <nickname>: Khóa nickname cho ngườI được tag"
-				+ "\n   {pn} @tag off: Tắt khóa nickname cho ngườI được tag"
+			vi: "   {pn} on <nickname>: Khóa nickname tất cả thành viên thành tên chỉ định"
+				+ "\n   {pn} off: Mở khóa nickname cho tất cả"
 				+ "\n   {pn} list: Xem danh sách nickname đã khóa",
-			en: "   {pn} @tag <nickname>: Lock nickname for tagged user"
-				+ "\n   {pn} @tag off: Unlock nickname for tagged user"
+			en: "   {pn} on <nickname>: Lock everyone's nickname to specified name"
+				+ "\n   {pn} off: Unlock all nicknames"
 				+ "\n   {pn} list: View locked nicknames list"
 		}
 	},
 
 	langs: {
 		vi: {
-			success: "✅ Đã khóa nickname của %1 thành: %2",
-			unlocked: "✅ Đã mở khóa nickname của %1",
-			alreadyLocked: "⚠️ %1 đã có nickname bị khóa: %2",
-			notLocked: "⚠️ %1 không có nickname bị khóa",
+			successLockAll: "✅ Đã khóa nickname tất cả thành viên thành: %1\n📊 Tổng số: %2 ngườI",
+			successUnlockAll: "✅ Đã mở khóa nickname cho tất cả thành viên",
 			listTitle: "📋 Danh sách nickname đã khóa:",
 			listEmpty: "📋 Không có nickname nào đang bị khóa",
 			listItem: "\n%1. %2: %3",
-			needTag: "⚠️ Vui lòng tag ngườI dùng cần khóa nickname",
-			needNickname: "⚠️ Vui lòng nhập nickname cần khóa",
+			needNickname: "⚠️ Vui lòng nhập nickname cần khóa\n💡 Ví dụ: nicklock on VIP Member",
+			apiNotAvailable: "❌ API không khả dụng!",
+			alreadyLocked: "⚠️ Nhóm đã có nickname bị khóa: %1\n💡 Dùng 'nicklock off' để mở khóa trước",
 			reverted: "⚠️ Nickname của %1 bị khóa! Đã khôi phục về: %2",
-			apiNotAvailable: "❌ API không khả dụng!"
+			failed: "❌ Không thể đặt nickname cho %1"
 		},
 		en: {
-			success: "✅ Nickname locked for %1 to: %2",
-			unlocked: "✅ Unlocked nickname for %1",
-			alreadyLocked: "⚠️ %1 already has locked nickname: %2",
-			notLocked: "⚠️ %1 doesn't have locked nickname",
+			successLockAll: "✅ Locked everyone's nickname to: %1\n📊 Total: %2 members",
+			successUnlockAll: "✅ Unlocked all nicknames",
 			listTitle: "📋 Locked nicknames list:",
 			listEmpty: "📋 No locked nicknames",
 			listItem: "\n%1. %2: %3",
-			needTag: "⚠️ Please tag the user to lock nickname",
-			needNickname: "⚠️ Please enter nickname to lock",
+			needNickname: "⚠️ Please enter nickname to lock\n💡 Example: nicklock on VIP Member",
+			apiNotAvailable: "❌ API not available!",
+			alreadyLocked: "⚠️ Group already has locked nickname: %1\n💡 Use 'nicklock off' to unlock first",
 			reverted: "⚠️ Nickname of %1 is locked! Reverted to: %2",
-			apiNotAvailable: "❌ API not available!"
+			failed: "❌ Failed to set nickname for %1"
 		}
 	},
 
@@ -56,18 +54,18 @@ module.exports = {
 			return message.reply(getLang("apiNotAvailable"));
 		}
 
-		const { threadID, mentions, messageReply } = event;
+		const { threadID } = event;
 
 		// List command
 		if (args[0] === "list") {
 			const nicklockData = await threadsData.get(threadID, "data.nicklock", {});
-			const lockedUsers = Object.keys(nicklockData);
+			const lockedUsers = Object.keys(nicklockData).filter(id => id !== "globalLock");
 
-			if (lockedUsers.length === 0) {
+			if (lockedUsers.length === 0 || !nicklockData.globalLock) {
 				return message.reply(getLang("listEmpty"));
 			}
 
-			let msg = getLang("listTitle");
+			let msg = getLang("listTitle") + `\n🔒 Global Lock: ${nicklockData.globalLock.nickname}`;
 			let i = 1;
 			for (const userID of lockedUsers) {
 				const userData = await usersData.get(userID);
@@ -77,86 +75,98 @@ module.exports = {
 			return message.reply(msg);
 		}
 
-		// Get target user ID
-		let targetID = null;
-		if (Object.keys(mentions).length > 0) {
-			targetID = Object.keys(mentions)[0];
-		} else if (messageReply) {
-			targetID = messageReply.senderID;
-		}
-
-		if (!targetID) {
-			return message.reply(getLang("needTag"));
-		}
-
-		const userData = await usersData.get(targetID);
-		const targetName = userData?.name || targetID;
-
-		// Get current nicklock data
-		const nicklockData = await threadsData.get(threadID, "data.nicklock", {});
-
-		// Unlock command
-		if (args[1] === "off") {
-			if (!nicklockData[targetID]) {
-				return message.reply(getLang("notLocked", targetName));
-			}
-			delete nicklockData[targetID];
-			await threadsData.set(threadID, nicklockData, "data.nicklock");
-			return message.reply(getLang("unlocked", targetName));
-		}
-
-		// Get nickname to lock
-		let nickname = args.slice(1).join(" ");
-		if (!nickname) {
-			return message.reply(getLang("needNickname"));
-		}
-
-		// Remove mention from nickname if present
-		if (mentions[targetID]) {
-			nickname = nickname.replace(mentions[targetID], "").trim();
-		}
-
-		if (!nickname) {
-			return message.reply(getLang("needNickname"));
-		}
-
-		// Check if already locked
-		if (nicklockData[targetID]) {
-			return message.reply(getLang("alreadyLocked", targetName, nicklockData[targetID].nickname));
-		}
-
-		// Save locked nickname with metadata
-		nicklockData[targetID] = {
-			nickname: nickname,
-			lockedBy: event.senderID,
-			lockedAt: Date.now()
-		};
-		await threadsData.set(threadID, nicklockData, "data.nicklock");
-
-		// Apply the nickname immediately using the correct API
-		try {
-			// Try changeNickname first, then setNickname as fallback
-			if (api.changeNickname) {
-				api.changeNickname(nickname, threadID, targetID);
-			} else if (api.setNickname) {
-				await new Promise((resolve, reject) => {
-					api.setNickname(nickname, threadID, targetID, (err) => {
-						if (err) reject(err);
-						else resolve();
-					});
-				});
-			} else {
-				return message.reply("❌ Nickname API not found in FCA!");
+		// OFF command - Unlock all
+		if (args[0] === "off") {
+			const nicklockData = await threadsData.get(threadID, "data.nicklock", {});
+			
+			if (!nicklockData.globalLock) {
+				return message.reply(getLang("listEmpty"));
 			}
 
-			return message.reply(getLang("success", targetName, nickname));
-		} catch (err) {
-			console.error("Nicklock error:", err);
-			// Remove from lock if failed
-			delete nicklockData[targetID];
-			await threadsData.set(threadID, nicklockData, "data.nicklock");
-			return message.reply("❌ Failed to set nickname: " + err.message);
+			// Clear all locked nicknames
+			await threadsData.set(threadID, {}, "data.nicklock");
+			return message.reply(getLang("successUnlockAll"));
 		}
+
+		// ON command - Lock all with same nickname
+		if (args[0] === "on") {
+			const nickname = args.slice(1).join(" ");
+			
+			if (!nickname) {
+				return message.reply(getLang("needNickname"));
+			}
+
+			const nicklockData = await threadsData.get(threadID, "data.nicklock", {});
+			
+			// Check if already locked globally
+			if (nicklockData.globalLock) {
+				return message.reply(getLang("alreadyLocked", nicklockData.globalLock.nickname));
+			}
+
+			// Get thread info to get all members
+			let threadInfo;
+			try {
+				threadInfo = await api.getThreadInfo(threadID);
+			} catch (err) {
+				console.error("Failed to get thread info:", err);
+				return message.reply("❌ Failed to get group members!");
+			}
+
+			const participants = threadInfo.participantIDs || [];
+			const botID = api.getCurrentUserID ? api.getCurrentUserID() : null;
+			
+			// Filter out bot from nickname change
+			const membersToLock = participants.filter(id => id !== botID);
+
+			// Save global lock data
+			nicklockData.globalLock = {
+				nickname: nickname,
+				lockedBy: event.senderID,
+				lockedAt: Date.now()
+			};
+
+			// Lock each member's nickname
+			let successCount = 0;
+			let failCount = 0;
+
+			for (const userID of membersToLock) {
+				// Store in database
+				nicklockData[userID] = {
+					nickname: nickname,
+					lockedAt: Date.now()
+				};
+
+				// Apply nickname immediately
+				try {
+					if (api.changeNickname) {
+						api.changeNickname(nickname, threadID, userID);
+					} else if (api.setNickname) {
+						api.setNickname(nickname, threadID, userID);
+					}
+					successCount++;
+				} catch (err) {
+					console.error(`Failed to set nickname for ${userID}:`, err);
+					failCount++;
+				}
+			}
+
+			// Save to database
+			await threadsData.set(threadID, nicklockData, "data.nicklock");
+
+			return message.reply(
+				getLang("successLockAll", nickname, successCount) +
+				(failCount > 0 ? `\n❌ Failed: ${failCount}` : "")
+			);
+		}
+
+		// If no valid command
+		return message.reply(
+			"❌ Invalid command!\n\n" +
+			"Usage:\n" +
+			"• nicklock on <nickname> - Lock everyone's nickname\n" +
+			"• nicklock off - Unlock all nicknames\n" +
+			"• nicklock list - View locked list"
+		);
 	},
 
 	onEvent: async function ({ message, event, threadsData, usersData, getLang }) {
@@ -169,12 +179,12 @@ module.exports = {
 		if (logMessageType !== "log:user-nickname") return;
 
 		const nicklockData = await threadsData.get(threadID, "data.nicklock", {});
+		
+		// Check if global lock is enabled
+		if (!nicklockData.globalLock) return;
+
 		const { participant_id, nickname: newNickname } = logMessageData;
-
-		// Check if this user has locked nickname
-		if (!nicklockData[participant_id]) return;
-
-		const lockedNickname = nicklockData[participant_id].nickname;
+		const lockedNickname = nicklockData.globalLock.nickname;
 
 		// Get bot's user ID
 		let botID;
@@ -184,11 +194,13 @@ module.exports = {
 			botID = null;
 		}
 
-		// If bot changed it, update the stored nickname
+		// If bot changed it, update the stored data
 		if (botID && author === botID) {
-			nicklockData[participant_id].nickname = newNickname;
-			nicklockData[participant_id].lockedAt = Date.now();
-			await threadsData.set(threadID, nicklockData, "data.nicklock");
+			if (nicklockData[participant_id]) {
+				nicklockData[participant_id].nickname = newNickname;
+				nicklockData[participant_id].lockedAt = Date.now();
+				await threadsData.set(threadID, nicklockData, "data.nicklock");
+			}
 			return;
 		}
 
