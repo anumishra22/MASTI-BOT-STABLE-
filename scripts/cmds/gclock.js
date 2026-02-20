@@ -11,13 +11,13 @@ if (!fs.existsSync(gclockDataPath)) {
 module.exports = {
 	config: {
 		name: "gclock",
-		version: "2.0",
+		version: "2.1",
 		author: "Anurag",
 		countDown: 5,
 		role: 1,
 		description: {
-			vi: "Khóa tên nhóm (không cho thay đổi tên nhóm)",
-			en: "Lock group name (prevent group name changes)"
+			vi: "Khóa tên nhóm - Silent Mode (không cho thay đổi tên nhóm)",
+			en: "Lock group name - Silent Mode (prevent group name changes)"
 		},
 		category: "box chat",
 		guide: {
@@ -76,12 +76,14 @@ module.exports = {
 			}
 		}
 
-		// If no args, unlock the group name
+		// If no args, unlock the group name (SILENT)
 		if (args.length === 0) {
 			if (gclockData[threadID]) {
 				delete gclockData[threadID];
 				fs.writeFileSync(gclockDataPath, JSON.stringify(gclockData, null, 2));
-				return message.reply(getLang("successUnlock"));
+				// SILENT: No success message sent
+				console.log(`[GCLOCK] Silent unlock for thread: ${threadID}`);
+				return;
 			} else {
 				return message.reply("❌ Group name is not locked!\n💡 Usage: gclock [group name] to lock");
 			}
@@ -107,14 +109,16 @@ module.exports = {
 				});
 			});
 
-			return message.reply(getLang("successLock", groupName));
+			// SILENT: No success message sent
+			console.log(`[GCLOCK] Silent lock applied: ${groupName} | Thread: ${threadID}`);
+			return;
 		} catch (err) {
 			console.error("Gclock error:", err);
 			return message.reply(getLang("failed"));
 		}
 	},
 
-	// Event handler to prevent group name changes
+	// Event handler to prevent group name changes (SILENT REVERT)
 	onEvent: async function ({ event, message, getLang }) {
 		const api = global.GoatBot?.fcaApi;
 		if (!api) return;
@@ -140,16 +144,14 @@ module.exports = {
 
 		// If the new name is different from locked name
 		if (newName !== lockedName) {
-			// Revert to locked name using gcname API
+			// Revert to locked name using gcname API (SILENT)
 			try {
 				api.gcname(lockedName, threadID, (err) => {
 					if (err) {
 						console.error("Failed to revert group name:", err);
 					} else {
-						// Send warning message
-						if (message && message.reply) {
-							message.reply(getLang("reverted", lockedName));
-						}
+						// SILENT: No warning message sent
+						console.log(`[GCLOCK] Silent revert: ${threadID} -> ${lockedName}`);
 					}
 				});
 			} catch (e) {
