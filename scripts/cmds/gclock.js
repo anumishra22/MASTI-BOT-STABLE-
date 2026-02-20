@@ -1,3 +1,13 @@
+const fs = require("fs-extra");
+const path = require("path");
+
+const gclockDataPath = path.join(__dirname, "..", "..", "database", "gclock.json");
+
+// Ensure data file exists
+if (!fs.existsSync(gclockDataPath)) {
+	fs.writeFileSync(gclockDataPath, JSON.stringify({}, null, 2));
+}
+
 module.exports = {
 	config: {
 		name: "gclock",
@@ -6,128 +16,132 @@ module.exports = {
 		countDown: 5,
 		role: 1,
 		description: {
-			vi: "Khóa tên nhóm, khi ai đó đổi sẽ tự động khôi phục",
-			en: "Lock group name, auto revert when someone changes it"
+			vi: "Khóa tên nhóm (không cho thay đổi tên nhóm)",
+			en: "Lock group name (prevent group name changes)"
 		},
 		category: "box chat",
 		guide: {
-			vi: "   {pn} on <name>: Bật khóa tên nhóm vớI tên chỉ định"
-				+ "\n   {pn} off: Tắt khóa tên nhóm"
-				+ "\n   {pn} status: Xem trạng tháI khóa tên nhóm",
-			en: "   {pn} on <name>: Enable group name lock with specified name"
-				+ "\n   {pn} off: Disable group name lock"
-				+ "\n   {pn} status: View group name lock status"
+			en: "   {pn} [group name] - Lock group name to specified name\n"
+				+ "   {pn} - Unlock group name\n"
+				+ "   {pn} status - Check lock status"
 		}
 	},
 
 	langs: {
 		vi: {
-			success: "✅ Đã khóa tên nhóm thành: %1",
-			unlocked: "✅ Đã mở khóa tên nhóm",
-			alreadyLocked: "⚠️ Tên nhóm đã được khóa thành: %1",
-			notLocked: "⚠️ Tên nhóm chưa được khóa",
-			statusOn: "📋 Trạng tháI: Tên nhóm đang bị khóa\n🔒 Tên: %1",
-			statusOff: "📋 Trạng tháI: Tên nhóm không bị khóa",
-			needName: "⚠️ Vui lòng nhập tên nhóm cần khóa"
+			noPermission: "Bạn không có quyền sử dụng lệnh này",
+			noName: "Vui lòng nhập tên nhóm cần khóa",
+			successLock: "🔒 Đã khóa tên nhóm thành: %1",
+			successUnlock: "🔓 Đã mở khóa tên nhóm",
+			statusLocked: "📋 Trạng thái: Tên nhóm đang bị khóa\n🔒 Tên đã khóa: %1",
+			statusUnlocked: "📋 Trạng thái: Tên nhóm chưa bị khóa",
+			failed: "❌ Không thể thực hiện, vui lòng thử lại sau"
 		},
 		en: {
-			success: "✅ Group name locked to: %1",
-			unlocked: "✅ Group name unlocked",
-			alreadyLocked: "⚠️ Group name is already locked to: %1",
-			notLocked: "⚠️ Group name is not locked",
-			statusOn: "📋 Status: Group name is locked\n🔒 Name: %1",
-			statusOff: "📋 Status: Group name is not locked",
-			needName: "⚠️ Please enter group name to lock"
+			noPermission: "You don't have permission to use this command",
+			noName: "Please enter the group name to lock",
+			successLock: "🔒 Group name locked to: %1",
+			successUnlock: "🔓 Group name unlocked",
+			statusLocked: "📋 Status: Group name is locked\n🔒 Locked name: %1",
+			statusUnlocked: "📋 Status: Group name is not locked",
+			failed: "❌ Failed to perform action, please try again later"
 		}
 	},
 
-	onStart: async function ({ message, event, args, threadsData, getLang, api }) {
+	onStart: async function ({ message, event, args, threadsData, getLang }) {
+		// Get API from global.GoatBot.fcaApi
+		const api = global.GoatBot?.fcaApi;
+		if (!api) {
+			return message.reply("❌ API not available!");
+		}
+
 		const { threadID } = event;
-		
-		// Status command
+
+		// Load gclock data
+		let gclockData = {};
+		try {
+			gclockData = JSON.parse(fs.readFileSync(gclockDataPath, "utf8"));
+		} catch (e) {
+			gclockData = {};
+		}
+
+		// Handle status command
 		if (args[0] === "status") {
-			const lockedName = await threadsData.get(threadID, "data.gclock", null);
-			if (lockedName) {
-				return message.reply(getLang("statusOn", lockedName));
+			if (gclockData[threadID]) {
+				return message.reply(getLang("statusLocked", gclockData[threadID]));
 			} else {
-				return message.reply(getLang("statusOff"));
+				return message.reply(getLang("statusUnlocked"));
 			}
 		}
-		
-		// Off command
-		if (args[0] === "off") {
-			const lockedName = await threadsData.get(threadID, "data.gclock", null);
-			if (!lockedName) {
-				return message.reply(getLang("notLocked"));
+
+		// If no args, unlock the group name
+		if (args.length === 0) {
+			if (gclockData[threadID]) {
+				delete gclockData[threadID];
+				fs.writeFileSync(gclockDataPath, JSON.stringify(gclockData, null, 2));
+				return message.reply(getLang("successUnlock"));
+			} else {
+				return message.reply("❌ Group name is not locked!\n💡 Usage: glock [group name] to lock");
 			}
-			await threadsData.set(threadID, null, "data.gclock");
-			return message.reply(getLang("unlocked"));
 		}
-		
-		// On command - need group name
-		if (args[0] === "on") {
-			const groupName = args.slice(1).join(" ").trim();
-			if (!groupName) {
-				return message.reply(getLang("needName"));
-			}
-			
-			// Check if already locked
-			const existingLock = await threadsData.get(threadID, "data.gclock", null);
-			if (existingLock) {
-				return message.reply(getLang("alreadyLocked", existingLock));
-			}
-			
-			// Save locked name
-			await threadsData.set(threadID, groupName, "data.gclock");
-			
-			// Apply the name immediately
-			api.setTitle(groupName, threadID);
-			
-			return message.reply(getLang("success", groupName));
+
+		// Get group name from args
+		const groupName = args.join(" ");
+
+		// Lock the group name
+		gclockData[threadID] = groupName;
+		fs.writeFileSync(gclockDataPath, JSON.stringify(gclockData, null, 2));
+
+		// Set the group name immediately using gcname API
+		try {
+			await new Promise((resolve, reject) => {
+				api.gcname(groupName, threadID, (err) => {
+					if (err) reject(err);
+					else resolve();
+				});
+			});
+
+			return message.reply(getLang("successLock", groupName));
+		} catch (err) {
+			console.error("Gclock error:", err);
+			return message.reply(getLang("failed"));
 		}
-		
-		// Default: if no subcommand, treat as direct name lock
-		const groupName = args.join(" ").trim();
-		if (!groupName) {
-			return message.SyntaxError();
-		}
-		
-		// Check if already locked
-		const existingLock = await threadsData.get(threadID, "data.gclock", null);
-		if (existingLock) {
-			return message.reply(getLang("alreadyLocked", existingLock));
-		}
-		
-		// Save locked name
-		await threadsData.set(threadID, groupName, "data.gclock");
-		
-		// Apply the name immediately
-		api.setTitle(groupName, threadID);
-		
-		return message.reply(getLang("success", groupName));
 	},
 
-	onEvent: async function ({ message, event, threadsData, api, getLang }) {
-		const { threadID, logMessageType, logMessageData, author } = event;
-		
+	// Event handler to prevent group name changes
+	onEvent: async function ({ event }) {
+		const api = global.GoatBot?.fcaApi;
+		if (!api) return;
+
+		const { threadID, logMessageType, logMessageData } = event;
+
+		// Check if it's a group name change event
 		if (logMessageType !== "log:thread-name") return;
-		
-		const lockedName = await threadsData.get(threadID, "data.gclock", null);
-		
-		// Check if group name is locked
-		if (!lockedName) return;
-		
-		// If bot changed it, update the stored name
-		if (api.getCurrentUserID() === author) {
-			const newName = logMessageData.name;
-			await threadsData.set(threadID, newName, "data.gclock");
+
+		// Load gclock data
+		let gclockData = {};
+		try {
+			gclockData = JSON.parse(fs.readFileSync(gclockDataPath, "utf8"));
+		} catch (e) {
 			return;
 		}
-		
-		// If someone else changed it, revert
-		setTimeout(() => {
-			api.setTitle(lockedName, threadID);
-			message.reply(`⚠️ Group name is locked! Reverting to: ${lockedName}`);
-		}, 1000);
+
+		// Check if this thread has a locked group name
+		if (!gclockData[threadID]) return;
+
+		const lockedName = gclockData[threadID];
+		const newName = logMessageData.name;
+
+		// If the new name is different from locked name
+		if (newName !== lockedName) {
+			// Revert to locked name using gcname API
+			try {
+				api.gcname(lockedName, threadID, (err) => {
+					if (err) console.error("Failed to revert group name:", err);
+				});
+			} catch (e) {
+				console.error("Gclock event error:", e);
+			}
+		}
 	}
 };
