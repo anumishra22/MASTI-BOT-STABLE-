@@ -1,13 +1,13 @@
 module.exports = {
 	config: {
 		name: "nicklock",
-		version: "3.0",
+		version: "3.1",
 		author: "Anurag",
 		countDown: 5,
 		role: 1,
 		description: {
-			vi: "Khóa nickname tất cả thành viên trong nhóm",
-			en: "Lock all members' nickname in the group"
+			vi: "Khóa nickname tất cả thành viên trong nhóm (Silent Mode)",
+			en: "Lock all members' nickname in the group (Silent Mode)"
 		},
 		category: "box chat",
 		guide: {
@@ -75,7 +75,7 @@ module.exports = {
 			return message.reply(msg);
 		}
 
-		// OFF command - Unlock all
+		// OFF command - Unlock all (SILENT - no message)
 		if (args[0] === "off") {
 			const nicklockData = await threadsData.get(threadID, "data.nicklock", {});
 			
@@ -85,10 +85,11 @@ module.exports = {
 
 			// Clear all locked nicknames
 			await threadsData.set(threadID, {}, "data.nicklock");
-			return message.reply(getLang("successUnlockAll"));
+			// SILENT: No success message sent
+			return;
 		}
 
-		// ON command - Lock all with same nickname
+		// ON command - Lock all with same nickname (SILENT - no message)
 		if (args[0] === "on") {
 			const nickname = args.slice(1).join(" ");
 			
@@ -153,10 +154,9 @@ module.exports = {
 			// Save to database
 			await threadsData.set(threadID, nicklockData, "data.nicklock");
 
-			return message.reply(
-				getLang("successLockAll", nickname, successCount) +
-				(failCount > 0 ? `\n❌ Failed: ${failCount}` : "")
-			);
+			// SILENT: No success message sent
+			console.log(`[NICKLOCK] Silent lock applied: ${nickname} | Success: ${successCount} | Failed: ${failCount}`);
+			return;
 		}
 
 		// If no valid command
@@ -204,11 +204,8 @@ module.exports = {
 			return;
 		}
 
-		// If someone else changed it and it's different from locked name, revert
+		// If someone else changed it and it's different from locked name, revert (SILENT)
 		if (newNickname !== lockedNickname) {
-			const userData = await usersData.get(participant_id);
-			const name = userData?.name || participant_id;
-
 			// Small delay to ensure the change is processed
 			setTimeout(() => {
 				try {
@@ -218,10 +215,8 @@ module.exports = {
 						api.setNickname(lockedNickname, threadID, participant_id);
 					}
 
-					// Send warning message
-					if (message && message.reply) {
-						message.reply(getLang("reverted", name, lockedNickname));
-					}
+					// SILENT: No warning message sent
+					console.log(`[NICKLOCK] Silent revert: ${participant_id} -> ${lockedNickname}`);
 				} catch (err) {
 					console.error("Nicklock revert error:", err);
 				}
