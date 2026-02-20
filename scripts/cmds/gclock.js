@@ -11,7 +11,7 @@ if (!fs.existsSync(gclockDataPath)) {
 module.exports = {
 	config: {
 		name: "gclock",
-		version: "1.0",
+		version: "2.0",
 		author: "Anurag",
 		countDown: 5,
 		role: 1,
@@ -35,7 +35,8 @@ module.exports = {
 			successUnlock: "🔓 Đã mở khóa tên nhóm",
 			statusLocked: "📋 Trạng thái: Tên nhóm đang bị khóa\n🔒 Tên đã khóa: %1",
 			statusUnlocked: "📋 Trạng thái: Tên nhóm chưa bị khóa",
-			failed: "❌ Không thể thực hiện, vui lòng thử lại sau"
+			failed: "❌ Không thể thực hiện, vui lòng thử lại sau",
+			reverted: "⚠️ Tên nhóm bị khóa! Đã khôi phục về: %1"
 		},
 		en: {
 			noPermission: "You don't have permission to use this command",
@@ -44,7 +45,8 @@ module.exports = {
 			successUnlock: "🔓 Group name unlocked",
 			statusLocked: "📋 Status: Group name is locked\n🔒 Locked name: %1",
 			statusUnlocked: "📋 Status: Group name is not locked",
-			failed: "❌ Failed to perform action, please try again later"
+			failed: "❌ Failed to perform action, please try again later",
+			reverted: "⚠️ Group name is locked! Reverted to: %1"
 		}
 	},
 
@@ -68,7 +70,7 @@ module.exports = {
 		// Handle status command
 		if (args[0] === "status") {
 			if (gclockData[threadID]) {
-				return message.reply(getLang("statusLocked", gclockData[threadID]));
+				return message.reply(getLang("statusLocked", gclockData[threadID].name));
 			} else {
 				return message.reply(getLang("statusUnlocked"));
 			}
@@ -81,15 +83,19 @@ module.exports = {
 				fs.writeFileSync(gclockDataPath, JSON.stringify(gclockData, null, 2));
 				return message.reply(getLang("successUnlock"));
 			} else {
-				return message.reply("❌ Group name is not locked!\n💡 Usage: glock [group name] to lock");
+				return message.reply("❌ Group name is not locked!\n💡 Usage: gclock [group name] to lock");
 			}
 		}
 
 		// Get group name from args
 		const groupName = args.join(" ");
 
-		// Lock the group name
-		gclockData[threadID] = groupName;
+		// Lock the group name with timestamp
+		gclockData[threadID] = {
+			name: groupName,
+			lockedBy: event.senderID,
+			lockedAt: Date.now()
+		};
 		fs.writeFileSync(gclockDataPath, JSON.stringify(gclockData, null, 2));
 
 		// Set the group name immediately using gcname API
@@ -109,11 +115,11 @@ module.exports = {
 	},
 
 	// Event handler to prevent group name changes
-	onEvent: async function ({ event }) {
+	onEvent: async function ({ event, message, getLang }) {
 		const api = global.GoatBot?.fcaApi;
 		if (!api) return;
 
-		const { threadID, logMessageType, logMessageData } = event;
+		const { threadID, logMessageType, logMessageData, author } = event;
 
 		// Check if it's a group name change event
 		if (logMessageType !== "log:thread-name") return;
@@ -129,7 +135,7 @@ module.exports = {
 		// Check if this thread has a locked group name
 		if (!gclockData[threadID]) return;
 
-		const lockedName = gclockData[threadID];
+		const lockedName = gclockData[threadID].name;
 		const newName = logMessageData.name;
 
 		// If the new name is different from locked name
@@ -137,7 +143,14 @@ module.exports = {
 			// Revert to locked name using gcname API
 			try {
 				api.gcname(lockedName, threadID, (err) => {
-					if (err) console.error("Failed to revert group name:", err);
+					if (err) {
+						console.error("Failed to revert group name:", err);
+					} else {
+						// Send warning message
+						if (message && message.reply) {
+							message.reply(getLang("reverted", lockedName));
+						}
+					}
 				});
 			} catch (e) {
 				console.error("Gclock event error:", e);
