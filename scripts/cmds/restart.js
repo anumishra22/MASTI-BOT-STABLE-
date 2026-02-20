@@ -6,7 +6,7 @@ module.exports = {
                 version: "1.2",
                 author: "NTKhang",
                 countDown: 5,
-                role: 1,
+                role: 4,
                 description: {
                         vi: "Khởi động lại bot",
                         en: "Restart bot"
