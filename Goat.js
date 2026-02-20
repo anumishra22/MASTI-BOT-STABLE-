@@ -143,39 +143,51 @@ global.temp = {
 };
 
 // watch dirConfigCommands file and dirConfig
+// FIXED for Render deployment - disabled file watching to prevent "EMFILE: too many open files" error
 const watchAndReloadConfig = (dir, type, prop, logName) => {
-        let lastModified = fs.statSync(dir).mtimeMs;
-        let isFirstModified = true;
+        // Skip file watching on Render or production environments to avoid EMFILE error
+        if (process.env.NODE_ENV === 'production' || process.env.RENDER || process.env.RAILWAY) {
+                log.info(logName, `File watching disabled for ${dir.replace(process.cwd(), "")} (production mode)`);
+                return;
+        }
 
-        fs.watch(dir, (eventType) => {
-                if (eventType === type) {
-                        const oldConfig = global.GoatBot[prop];
+        try {
+                let lastModified = fs.statSync(dir).mtimeMs;
+                let isFirstModified = true;
 
-                        // wait 200ms to reload config
-                        setTimeout(() => {
-                                try {
-                                        // if file change first time (when start bot, maybe you know it's called when start bot?) => not reload
-                                        if (isFirstModified) {
-                                                isFirstModified = false;
-                                                return;
+                fs.watch(dir, (eventType) => {
+                        if (eventType === type) {
+                                const oldConfig = global.GoatBot[prop];
+
+                                // wait 200ms to reload config
+                                setTimeout(() => {
+                                        try {
+                                                // if file change first time (when start bot, maybe you know it's called when start bot?) => not reload
+                                                if (isFirstModified) {
+                                                        isFirstModified = false;
+                                                        return;
+                                                }
+                                                // if file not change => not reload
+                                                if (lastModified === fs.statSync(dir).mtimeMs) {
+                                                        return;
+                                                }
+                                                global.GoatBot[prop] = JSON.parse(fs.readFileSync(dir, 'utf-8'));
+                                                log.success(logName, `Reloaded ${dir.replace(process.cwd(), "")}`);
                                         }
-                                        // if file not change => not reload
-                                        if (lastModified === fs.statSync(dir).mtimeMs) {
-                                                return;
+                                        catch (err) {
+                                                log.warn(logName, `Can't reload ${dir.replace(process.cwd(), "")}`);
+                                                global.GoatBot[prop] = oldConfig;
                                         }
-                                        global.GoatBot[prop] = JSON.parse(fs.readFileSync(dir, 'utf-8'));
-                                        log.success(logName, `Reloaded ${dir.replace(process.cwd(), "")}`);
-                                }
-                                catch (err) {
-                                        log.warn(logName, `Can't reload ${dir.replace(process.cwd(), "")}`);
-                                        global.GoatBot[prop] = oldConfig;
-                                }
-                                finally {
-                                        lastModified = fs.statSync(dir).mtimeMs;
-                                }
-                        }, 200);
-                }
-        });
+                                        finally {
+                                                lastModified = fs.statSync(dir).mtimeMs;
+                                        }
+                                }, 200);
+                        }
+                });
+        }
+        catch (err) {
+                log.warn(logName, `Cannot watch ${dir.replace(process.cwd(), "")}: ${err.message}`);
+        }
 };
 
 watchAndReloadConfig(dirConfigCommands, 'change', 'configCommands', 'CONFIG COMMANDS');
