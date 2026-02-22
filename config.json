@@ -44,7 +44,7 @@
     "how_it_work": "if you enable both whiteListMode and whiteListModeThread, the system will check if the user is in whiteListIds, then check if the thread is in whiteListThreadIds, if one of the conditions is true, the user can use the bot"
   },
   "database": {
-    "type": "sqlite",
+    "type": "mongodb",
     "uriMongodb": "mongodb+srv://ansh6749:anu2000@cluster0.tklmnx3.mongodb.net/?appName=Cluster0",
     "autoSyncWhenStart": false,
     "autoRefreshThreadInfoFirstTime": true,
